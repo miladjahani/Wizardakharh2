@@ -104,6 +104,7 @@ footer{text-align:center;color:var(--text-secondary);font-size:12px;padding:20px
                 <input type="password" id="apiToken" placeholder="توکن را اینجا وارد کن..." autocomplete="off">
             </div>
             <button class="btn btn-primary btn-block" onclick="startAutoDeploy()">🚀 شروع استقرار کاملاً خودکار</button>
+            <div id="corsWarning" class="alert alert-error hidden" style="margin-top:16px">⚠️ اگر خطای CORS دریافت کردید، لطفاً افزونه "Allow CORS: Access-Control-Allow-Origin" را در مرورگر خود نصب و فعال کنید.</div>
             <div id="errorMessage" class="alert alert-error hidden" style="margin-top:16px"></div>
         </div>
         
@@ -180,10 +181,30 @@ function renderDashboard(){
 function deleteInstance(idx){instances.splice(idx,1);saveInstances(instances);renderDashboard();}
 function generateSubdomain(){return 'mili-'+Math.random().toString(36).slice(2,8)+'-'+Math.random().toString(36).slice(2,4);}
 
+async function cfApi(endpoint, token, options={}){
+    // استفاده از پروکسی AllOrigins برای دور زدن CORS
+    const url = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(endpoint);
+    const headers = options.headers || {};
+    headers['Authorization'] = 'Bearer ' + token;
+    
+    const res = await fetch(url, {
+        ...options,
+        headers
+    });
+    
+    if(!res.ok){
+        const text = await res.text();
+        throw new Error('HTTP '+res.status+': '+text);
+    }
+    return await res.json();
+}
+
 async function startAutoDeploy(){
     const token=document.getElementById('apiToken').value.trim();
     const errorBox=document.getElementById('errorMessage');
+    const corsWarning=document.getElementById('corsWarning');
     errorBox.classList.add('hidden');
+    corsWarning.classList.add('hidden');
     if(!token){errorBox.textContent='لطفاً API Token را وارد کنید.';errorBox.classList.remove('hidden');return;}
     
     document.getElementById('deployProgress').classList.remove('hidden');
@@ -231,7 +252,12 @@ async function startAutoDeploy(){
         },600);
     }catch(err){
         console.error(err);
-        errorBox.textContent='خطا: '+err.message;
+        let msg = err.message || 'خطای ناشناخته';
+        if(msg.includes('Failed to fetch')||msg.includes('CORS')){
+            msg = 'خطای CORS: لطفاً افزونه "Allow CORS" را در مرورگر نصب و فعال کنید.';
+            corsWarning.classList.remove('hidden');
+        }
+        errorBox.textContent='خطا: '+msg;
         errorBox.classList.remove('hidden');
         document.getElementById('deployProgress').classList.add('hidden');
         document.getElementById('deployFormCard').classList.remove('hidden');
@@ -246,31 +272,27 @@ function setStepStatus(stepId,status){
 function updateProgress(pct){document.getElementById('progressFill').style.width=pct+'%';}
 
 async function validateToken(token){
-    const res=await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify',{headers:{'Authorization':'Bearer '+token}});
-    const data=await res.json();
-    if(!res.ok||!data.success)throw new Error('توکن نامعتبر است.');
-    const accRes=await fetch('https://api.cloudflare.com/client/v4/accounts',{headers:{'Authorization':'Bearer '+token}});
-    const accData=await accRes.json();
-    if(!accRes.ok||!accData.success||!accData.result||accData.result.length===0)throw new Error('حسابی یافت نشد.');
-    return{id:accData.result[0].id,name:accData.result[0].name};
+    const res=await cfApi('https://api.cloudflare.com/client/v4/user/tokens/verify', token);
+    if(!res.success)throw new Error('توکن نامعتبر است.');
+    const accRes=await cfApi('https://api.cloudflare.com/client/v4/accounts', token);
+    if(!accRes.success||!accRes.result||accRes.result.length===0)throw new Error('حسابی یافت نشد.');
+    return{id:accRes.result[0].id,name:accRes.result[0].name};
 }
 
 async function createD1(token,accountId,name){
-    const res=await fetch('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/d1/database',{
-        method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({name})
+    const res=await cfApi('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/d1/database', token,{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})
     });
-    const data=await res.json();
-    if(!res.ok||!data.success)throw new Error('ساخت D1 failed: '+(data.errors?.[0]?.message||'خطا'));
-    return data.result;
+    if(!res.success)throw new Error('ساخت D1 failed: '+(res.errors?.[0]?.message||'خطا'));
+    return res.result;
 }
 
 async function createKV(token,accountId,name){
-    const res=await fetch('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/storage/kv/namespaces',{
-        method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({title:name})
+    const res=await cfApi('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/storage/kv/namespaces', token,{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:name})
     });
-    const data=await res.json();
-    if(!res.ok||!data.success)throw new Error('ساخت KV failed: '+(data.errors?.[0]?.message||'خطا'));
-    return data.result;
+    if(!res.success)throw new Error('ساخت KV failed: '+(res.errors?.[0]?.message||'خطا'));
+    return res.result;
 }
 
 async function uploadWorker(token,accountId,subdomain,script,dbId,kvId){
@@ -278,11 +300,20 @@ async function uploadWorker(token,accountId,subdomain,script,dbId,kvId){
     const formData=new FormData();
     formData.append('index.js',new Blob([script],{type:'application/javascript+module'}),'index.js');
     formData.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}),'metadata.json');
-    const res=await fetch('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/workers/scripts/'+subdomain,{
-        method:'PUT',headers:{'Authorization':'Bearer '+token},body:formData
-    });
-    const data=await res.json();
-    if(!res.ok||!data.success)throw new Error('آپلود Worker failed: '+(data.errors?.[0]?.message||'خطا'));
+    
+    // تلاش مستقیم - ممکن است به دلیل CORS شکست بخورد
+    try{
+        const res=await fetch('https://api.cloudflare.com/client/v4/accounts/'+accountId+'/workers/scripts/'+subdomain,{
+            method:'PUT',headers:{'Authorization':'Bearer '+token},body:formData
+        });
+        const data=await res.json();
+        if(!res.ok||!data.success)throw new Error('آپلود Worker failed: '+(data.errors?.[0]?.message||'خطا'));
+    }catch(e){
+        if(e.message.includes('Failed to fetch')){
+            throw new Error('خطای CORS: برای آپلود Worker باید از افزونه "Allow CORS" در مرورگر استفاده کنید یا این کار را از طریق Cloudflare Dashboard انجام دهید.');
+        }
+        throw e;
+    }
 }
 
 function resetDeployForm(){
@@ -290,6 +321,7 @@ function resetDeployForm(){
     document.getElementById('apiToken').value='';
     document.getElementById('deployFormCard').classList.remove('hidden');
     document.getElementById('errorMessage').classList.add('hidden');
+    document.getElementById('corsWarning').classList.add('hidden');
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
