@@ -16,7 +16,7 @@ venv/
 .venv/
 .env
 .env.local
-*.env.*
+.env.*
 
 # Logs and temp files
 *.log
@@ -43,6 +43,6 @@ build/
 target/
 .gradle/
 
-# Python specific
+# Cache directories
 .mypy_cache/
 .pytest_cache/
