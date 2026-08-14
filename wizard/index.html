@@ -19,7 +19,7 @@
         background:linear-gradient(135deg,var(--dark-bg) 0%,#1a1a2e 50%,#0f0f1a 100%);
         min-height:100vh; color:var(--text-primary);
     }
-    .app-shell{ max-width:1100px; margin:0 auto; padding:20px; }
+    .app-shell{ max-width:900px; margin:0 auto; padding:20px; }
     .topbar{
         display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;
         background:var(--card-bg); border:1px solid var(--border-soft); border-radius:18px;
@@ -64,8 +64,6 @@
     }
     input:focus{ border-color:var(--primary-green); box-shadow:0 0 12px rgba(0,255,136,.18); }
     input::placeholder{ color:var(--text-secondary); }
-    .checkbox-row{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-secondary); }
-    .checkbox-row input{ width:auto; }
 
     .btn{
         padding:13px 20px; border:none; border-radius:10px; font-size:14px; font-weight:800;
@@ -105,18 +103,6 @@
     .empty-state{ text-align:center; padding:50px 20px; color:var(--text-secondary); }
     .empty-state svg{ width:56px; height:56px; opacity:.4; margin-bottom:14px; }
 
-    /* step indicator (deploy view) */
-    .step-indicator{ display:flex; justify-content:space-between; margin-bottom:26px; position:relative; }
-    .step-indicator::before{ content:''; position:absolute; top:19px; left:0; right:0; height:2px; background:var(--border-soft); z-index:-1; }
-    .step{ display:flex; flex-direction:column; align-items:center; flex:1; }
-    .step-number{ width:38px; height:38px; border-radius:50%; background:var(--input-bg); border:2px solid var(--border-soft); display:flex; align-items:center; justify-content:center; font-weight:800; margin-bottom:6px; font-size:13px; }
-    .step.active .step-number{ background:var(--primary-green); border-color:var(--primary-green); color:#06110c; }
-    .step.completed .step-number{ background:var(--success-green); border-color:var(--success-green); color:#06110c; }
-    .step-label{ font-size:11px; color:var(--text-secondary); }
-    .step.active .step-label{ color:var(--primary-green); font-weight:700; }
-    .step-content{ display:none; }
-    .step-content.active{ display:block; }
-
     .progress-bar{ width:100%; height:8px; background:var(--input-bg); border-radius:99px; overflow:hidden; margin-bottom:22px; }
     .progress-fill{ height:100%; width:0%; background:linear-gradient(90deg,var(--primary-green),var(--secondary-green)); transition:width .4s ease; }
     .status-item{ display:flex; align-items:center; gap:12px; padding:10px 0; font-size:13px; border-bottom:1px solid var(--border-soft); }
@@ -132,9 +118,6 @@
     .result-item:last-child{ border-bottom:none; }
     .result-value{ color:var(--primary-green); word-break:break-all; flex:1; }
 
-    .modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.65); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
-    .modal-box{ background:var(--card-bg); border:1px solid var(--border-soft); border-radius:16px; padding:24px; max-width:420px; width:100%; }
-
     footer{ text-align:center; color:var(--text-secondary); font-size:12px; padding:20px 0; }
 </style>
 </head>
@@ -148,13 +131,12 @@
             </div>
             <div>
                 <h1>MiliConfig Control Center</h1>
-                <p>مدیریت و استقرار Cloudflare Worker</p>
+                <p>استقرار خودکار Cloudflare Worker</p>
             </div>
         </div>
         <div class="nav">
-            <button class="nav-btn" data-view="dashboard" onclick="goto('dashboard')">📊 داشبورد</button>
-            <button class="nav-btn" data-view="deploy" onclick="goto('deploy')">🚀 استقرار نمونه جدید</button>
-            <button class="nav-btn" data-view="settings" onclick="goto('settings')">⚙️ تنظیمات</button>
+            <button class="nav-btn active" data-view="deploy" onclick="goto('deploy')">🚀 استقرار جدید</button>
+            <button class="nav-btn" data-view="dashboard" onclick="goto('dashboard')">📊 نمونه‌های من</button>
         </div>
     </div>
 
@@ -226,26 +208,10 @@
         </div>
     </section>
 
-    <!-- ===================== SETTINGS ===================== -->
-    <section id="view-settings" class="view">
-        <div class="card">
-            <h2 class="section-title">تنظیمات</h2>
-            <p class="muted">این مقادیر فقط در همین مرورگر (localStorage) ذخیره می‌شن.</p>
+    <footer>MiliConfig 2 · بر پایه Zeus Panel</footer>
+</div>
 
-            <div class="form-group">
-                <label for="settingsCorsProxy">آدرس Worker پروکسی <small>(اگه ویزارد روی GitHub Pages هست، این رو پر کن)</small>:</label>
-                <input type="text" id="settingsCorsProxy" placeholder="https://cf-proxy.YOUR-SUBDOMAIN.workers.dev">
-                <p class="muted" style="margin:8px 0 0;">
-                    مرورگر مستقیم اجازه‌ی صدا زدن api.cloudflare.com رو نمی‌ده (CORS).
-                    فایل <code>proxy.js</code> رو یک‌بار دستی توی داشبورد Cloudflare
-                    (Workers & Pages → Create Worker → Edit code → Paste → Deploy) دیپلوی کن
-                    و آدرسش رو اینجا بذار.
-                </p>
-            </div>
-
-            <div class="form-group">
-                <label for="settingsToken">API Token پیش‌فرض:</label>
-                <input type="password" id="settingsToken" placeholder="توکن Cloudflare">
+<script>
             </div>
             <div class="checkbox-row" style="margin-bottom:20px;">
                 <input type="checkbox" id="settingsSaveToken">
