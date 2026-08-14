@@ -176,100 +176,52 @@
     <!-- ===================== DEPLOY WIZARD ===================== -->
     <section id="view-deploy" class="view">
         <div class="card">
-            <div class="step-indicator">
-                <div class="step" data-step="1"><div class="step-number">1</div><div class="step-label">توکن</div></div>
-                <div class="step" data-step="2"><div class="step-number">2</div><div class="step-label">تنظیمات</div></div>
-                <div class="step" data-step="3"><div class="step-number">3</div><div class="step-label">نصب</div></div>
-                <div class="step" data-step="4"><div class="step-number">4</div><div class="step-label">نتیجه</div></div>
+            <h2 class="section-title">استقرار خودکار Worker</h2>
+            <p class="muted">فقط API Token کلودفلر رو وارد کن تا همه‌چیز خودکار انجام بشه.</p>
+            
+            <div class="alert alert-info">
+                🔐 یک API Token از Cloudflare لازم داری که به Worker Scripts، D1 و Account Settings دسترسی داشته باشه.
             </div>
-
-            <!-- step 1 -->
-            <div class="step-content" id="dstep1">
-                <div class="alert alert-warn" id="proxyMissingWarn" style="display:none;">
-                    ℹ️ فیلد «آدرس Worker پروکسی» توی تنظیمات خالیه. این یعنی فرض می‌کنیم همین صفحه
-                    مستقیم توسط خودِ <code>proxy.js</code> سرو می‌شه (حالت same-origin). اگه به‌جاش
-                    از GitHub Pages برای هاست ویزارد استفاده می‌کنی، باید آدرس Worker جدای پروکسی رو
-                    اونجا وارد کنی، وگرنه با خطای اتصال مواجه می‌شی.
-                    <br><br>
-                    <button class="btn btn-outline btn-sm" onclick="goto('settings')">رفتن به تنظیمات</button>
-                </div>
-                <div class="alert alert-info">
-                    🔐 یک API Token از Cloudflare لازم داری که به Worker Scripts، D1 و اطلاعات اکانت دسترسی داشته باشه.
-                    اگه در تنظیمات توکن ذخیره کرده باشی، همینجا از قبل پر شده.
-                </div>
-                <div class="form-group">
-                    <label>لینک ساخت خودکار توکن (دسترسی‌ها از قبل انتخاب شدن):</label>
-                    <a id="token-link" href="#" target="_blank" class="btn btn-outline btn-block">📋 کلیک برای ساخت توکن در Cloudflare</a>
-                </div>
-                <div class="form-group">
-                    <label for="apiToken">API Token:</label>
-                    <input type="password" id="apiToken" placeholder="توکن را اینجا وارد کن..." autocomplete="off">
-                </div>
-                <button class="btn btn-primary btn-block" onclick="validateToken()">بررسی و ادامه</button>
+            <div class="form-group">
+                <label>لینک ساخت خودکار توکن (دسترسی‌ها از قبل انتخاب شدن):</label>
+                <a id="token-link" href="#" target="_blank" class="btn btn-outline btn-block">📋 کلیک برای ساخت توکن در Cloudflare</a>
             </div>
-
-            <!-- step 2 -->
-            <div class="step-content" id="dstep2">
-                <div class="alert alert-warn">⚙️ تنظیمات این نمونه رو مشخص کن.</div>
-                <div class="form-group">
-                    <label for="instanceName">یک اسم دلخواه برای این نمونه (فقط برای نمایش در داشبورد):</label>
-                    <input type="text" id="instanceName" placeholder="مثلاً: سرور اصلی">
-                </div>
-                <div class="form-group">
-                    <label for="workerName">نام Worker:</label>
-                    <input type="text" id="workerName" value="miliconfig2-worker">
-                </div>
-                <div class="form-group">
-                    <label for="subdomain">ساب‌دامین workers.dev (اگه از قبل داری، همون رو بنویس):</label>
-                    <input type="text" id="subdomain" placeholder="miliconfig">
-                </div>
-                <div class="form-group">
-                    <label for="proxyUrl">URL پروکسی کراس <small>(اختیاری)</small>:</label>
-                    <input type="text" id="proxyUrl" placeholder="https://your-proxy.com">
-                </div>
-                <div class="form-group">
-                    <label for="wizardUrl">آدرس همین برنامه در GitHub Pages <small>(برای دکمه‌ی «استقرار نمونه جدید» داخل پنل)</small>:</label>
-                    <input type="text" id="wizardUrl" value="https://miladjahani.github.io/wizard245/">
-                </div>
-                <div class="btn-row">
-                    <button class="btn btn-outline" style="flex:1" onclick="showStep(1)">بازگشت</button>
-                    <button class="btn btn-primary" style="flex:2" onclick="startDeployment()">شروع نصب خودکار</button>
-                </div>
+            <div class="form-group">
+                <label for="apiToken">API Token:</label>
+                <input type="password" id="apiToken" placeholder="توکن را اینجا وارد کن..." autocomplete="off">
             </div>
-
-            <!-- step 3 -->
-            <div class="step-content" id="dstep3">
-                <h3 style="margin-bottom:18px; text-align:center;">در حال نصب...</h3>
-                <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-                <div id="statusList">
-                    <div class="status-item"><div class="status-icon" id="icon-validate">•</div><span id="text-validate">بررسی اعتبار توکن</span></div>
-                    <div class="status-item"><div class="status-icon" id="icon-account">•</div><span id="text-account">دریافت اطلاعات حساب</span></div>
-                    <div class="status-item"><div class="status-icon" id="icon-d1">•</div><span id="text-d1">ایجاد D1 Database</span></div>
-                    <div class="status-item"><div class="status-icon" id="icon-kv">•</div><span id="text-kv">ایجاد KV Storage</span></div>
-                    <div class="status-item"><div class="status-icon" id="icon-worker">•</div><span id="text-worker">آپلود و کانفیگ Worker</span></div>
-                    <div class="status-item"><div class="status-icon" id="icon-bindings">•</div><span id="text-bindings">اتصال Bindings</span></div>
-                    <div class="status-item"><div class="status-icon" id="icon-subdomain">•</div><span id="text-subdomain">تنظیم ساب‌دامین</span></div>
-                    <div class="status-item"><div class="status-icon" id="icon-complete">•</div><span id="text-complete">تکمیل نصب</span></div>
-                </div>
-                <div id="errorMessage" class="alert alert-error hidden" style="margin-top:16px;"></div>
+            <button class="btn btn-primary btn-block" onclick="startAutoDeploy()">🚀 شروع استقرار کاملاً خودکار</button>
+            <div id="errorMessage" class="alert alert-error hidden" style="margin-top:16px;"></div>
+        </div>
+        
+        <div class="card hidden" id="deployProgress">
+            <h3 style="margin-bottom:18px; text-align:center;">در حال نصب...</h3>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <div id="statusList">
+                <div class="status-item"><div class="status-icon" id="icon-validate">•</div><span id="text-validate">بررسی اعتبار توکن</span></div>
+                <div class="status-item"><div class="status-icon" id="icon-account">•</div><span id="text-account">دریافت اطلاعات حساب</span></div>
+                <div class="status-item"><div class="status-icon" id="icon-d1">•</div><span id="text-d1">ایجاد D1 Database</span></div>
+                <div class="status-item"><div class="status-icon" id="icon-kv">•</div><span id="text-kv">ایجاد KV Storage</span></div>
+                <div class="status-item"><div class="status-icon" id="icon-worker">•</div><span id="text-worker">آپلود و کانفیگ Worker</span></div>
+                <div class="status-item"><div class="status-icon" id="icon-bindings">•</div><span id="text-bindings">اتصال Bindings</span></div>
+                <div class="status-item"><div class="status-icon" id="icon-subdomain">•</div><span id="text-subdomain">تنظیم ساب‌دامین</span></div>
+                <div class="status-item"><div class="status-icon" id="icon-complete">•</div><span id="text-complete">تکمیل نصب</span></div>
             </div>
-
-            <!-- step 4 -->
-            <div class="step-content" id="dstep4">
-                <div style="text-align:center; margin-bottom:20px;">
-                    <h2 style="color:var(--success-green); margin-bottom:8px;">نصب با موفقیت انجام شد!</h2>
-                    <p class="muted" style="margin-bottom:0;">این نمونه به داشبورد اضافه شد.</p>
-                </div>
-                <div class="result-box">
-                    <div class="result-item"><span>Worker URL:</span><span class="result-value" id="resultUrl"></span></div>
-                    <div class="result-item"><span>Database ID:</span><span class="result-value" id="resultDb"></span></div>
-                    <div class="result-item"><span>KV Namespace ID:</span><span class="result-value" id="resultKv"></span></div>
-                </div>
-                <div class="alert alert-info">💡 برای پنل مدیریت، <code>/panel</code> رو به انتهای Worker URL اضافه کن.</div>
-                <div class="btn-row">
-                    <button class="btn btn-outline" style="flex:1" onclick="resetDeployForm(); goto('deploy')">نصب یک نمونه دیگر</button>
-                    <button class="btn btn-primary" style="flex:1" onclick="goto('dashboard')">رفتن به داشبورد</button>
-                </div>
+        </div>
+        
+        <div class="card hidden" id="deployResult">
+            <div style="text-align:center; margin-bottom:20px;">
+                <h2 style="color:var(--success-green); margin-bottom:8px;">✅ نصب با موفقیت انجام شد!</h2>
+                <p class="muted" style="margin-bottom:0;">Worker شما آماده است.</p>
+            </div>
+            <div class="result-box">
+                <div class="result-item"><span>Worker URL:</span><span class="result-value" id="resultUrl"></span></div>
+                <div class="result-item"><span>Database ID:</span><span class="result-value" id="resultDb"></span></div>
+                <div class="result-item"><span>KV Namespace ID:</span><span class="result-value" id="resultKv"></span></div>
+            </div>
+            <div class="alert alert-info">💡 برای پنل مدیریت، <code>/panel</code> رو به انتهای Worker URL اضافه کن.</div>
+            <div class="btn-row">
+                <button class="btn btn-primary btn-block" onclick="resetDeployForm()">استقرار Worker دیگر</button>
             </div>
         </div>
     </section>
@@ -278,17 +230,16 @@
     <section id="view-settings" class="view">
         <div class="card">
             <h2 class="section-title">تنظیمات</h2>
-            <p class="muted">این مقادیر فقط در همین مرورگر (localStorage) ذخیره می‌شن؛ به هیچ سروری جز Cloudflare و GitHub فرستاده نمی‌شن.</p>
+            <p class="muted">این مقادیر فقط در همین مرورگر (localStorage) ذخیره می‌شن.</p>
 
             <div class="form-group">
-                <label for="settingsCorsProxy">آدرس Worker پروکسی <small>(اگه ویزارد رو خودِ همین proxy.js سرو می‌کنه، خالی بذار)</small>:</label>
-                <input type="text" id="settingsCorsProxy" placeholder="https://cf-proxy.YOUR-SUBDOMAIN.workers.dev (فقط اگه جدا از GitHub Pages دیپلوی شده)">
+                <label for="settingsCorsProxy">آدرس Worker پروکسی <small>(اگه ویزارد روی GitHub Pages هست، این رو پر کن)</small>:</label>
+                <input type="text" id="settingsCorsProxy" placeholder="https://cf-proxy.YOUR-SUBDOMAIN.workers.dev">
                 <p class="muted" style="margin:8px 0 0;">
                     مرورگر مستقیم اجازه‌ی صدا زدن api.cloudflare.com رو نمی‌ده (CORS).
                     فایل <code>proxy.js</code> رو یک‌بار دستی توی داشبورد Cloudflare
-                    (Workers &amp; Pages → Create Worker → Edit code → Paste → Deploy) دیپلوی کن.
-                    اگه همون Worker رو با یک assets binding به‌عنوان هاست خودِ ویزارد هم استفاده کنی
-                    (به‌جای GitHub Pages)، این فیلد رو خالی بذار. اگه جدا از هم هستن، آدرس Worker رو اینجا بذار.
+                    (Workers & Pages → Create Worker → Edit code → Paste → Deploy) دیپلوی کن
+                    و آدرسش رو اینجا بذار.
                 </p>
             </div>
 
@@ -298,7 +249,7 @@
             </div>
             <div class="checkbox-row" style="margin-bottom:20px;">
                 <input type="checkbox" id="settingsSaveToken">
-                <label for="settingsSaveToken" style="margin:0;">این توکن رو در همین مرورگر ذخیره کن (تا هربار مجبور نباشی وارد کنی)</label>
+                <label for="settingsSaveToken" style="margin:0;">این توکن رو در همین مرورگر ذخیره کن</label>
             </div>
 
             <div class="form-group">
@@ -367,7 +318,9 @@ function goto(view) {
     location.hash = view;
     if (view === 'dashboard') renderDashboard();
     if (view === 'settings') fillSettingsForm();
-    if (view === 'deploy') prefillDeployForm();
+    if (view === 'deploy') {
+        if (settings.saveToken && settings.token) document.getElementById('apiToken').value = settings.token;
+    }
 }
 window.addEventListener('DOMContentLoaded', () => {
     buildTokenLink();
@@ -581,38 +534,12 @@ async function fetchLatestSource() {
 /* ========================= DEPLOY WIZARD ========================= */
 let deployState = { token: '', accountId: '' };
 
-function showStep(step) {
-    document.querySelectorAll('#view-deploy .step-content').forEach((el, i) => el.classList.toggle('active', i + 1 === step));
-    document.querySelectorAll('#view-deploy .step').forEach((el, i) => {
-        el.classList.toggle('active', i + 1 === step);
-        el.classList.toggle('completed', i + 1 < step);
-    });
-}
-function prefillDeployForm() {
-    if (settings.saveToken && settings.token) document.getElementById('apiToken').value = settings.token;
-    if (settings.wizardUrl) document.getElementById('wizardUrl').value = settings.wizardUrl;
-    document.getElementById('proxyMissingWarn').style.display = settings.corsProxy ? 'none' : 'block';
-    showStep(1);
-}
 function resetDeployForm() {
     document.getElementById('errorMessage').classList.add('hidden');
     document.querySelectorAll('#statusList .status-icon').forEach(i => { i.className = 'status-icon'; i.innerHTML = '•'; });
     document.getElementById('progressFill').style.width = '0%';
-    showStep(1);
 }
 
-async function validateToken() {
-    const token = document.getElementById('apiToken').value.trim();
-    if (!token) { alert('لطفاً یک API Token وارد کن'); return; }
-    try {
-        const accounts = await cfListAccounts(token);
-        deployState.token = token;
-        deployState.accountId = accounts[0].id;
-        showStep(2);
-    } catch (e) {
-        alert('خطا در بررسی توکن: ' + e.message);
-    }
-}
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 async function updateStatus(stepId, status) {
@@ -626,74 +553,6 @@ async function updateStatus(stepId, status) {
     document.getElementById('progressFill').style.width = ((idx + 1) / allIcons.length * 100) + '%';
 }
 
-async function startDeployment() {
-    showStep(3);
-    document.getElementById('errorMessage').classList.add('hidden');
-    const instanceName = document.getElementById('instanceName').value.trim() || document.getElementById('workerName').value.trim();
-    const workerName = document.getElementById('workerName').value.trim() || 'miliconfig2-worker';
-    let subdomain = document.getElementById('subdomain').value.trim() || 'miliconfig';
-    const proxyUrl = document.getElementById('proxyUrl').value.trim();
-    const wizardUrl = document.getElementById('wizardUrl').value.trim();
-    const token = deployState.token, accountId = deployState.accountId;
-
-    try {
-        await updateStatus('validate', 'processing'); await sleep(300); await updateStatus('validate', 'success');
-        await updateStatus('account', 'processing'); await sleep(300); await updateStatus('account', 'success');
-
-        await updateStatus('d1', 'processing');
-        const dbId = await cfCreateD1(token, accountId, workerName + '-db');
-        await updateStatus('d1', 'success');
-
-        await updateStatus('kv', 'processing');
-        const kvId = await cfCreateKV(token, accountId, workerName + '-kv');
-        await updateStatus('kv', 'success');
-
-        await updateStatus('worker', 'processing');
-        let sourceCode = await fetchLatestSource();
-        if (proxyUrl) sourceCode = 'const CROSS_PROXY_URL = ' + JSON.stringify(proxyUrl) + ';\n' + sourceCode;
-        const bindings = [
-            { type: 'd1', name: 'DB', id: dbId },
-            { type: 'kv_namespace', name: 'KV', namespace_id: kvId },
-            { type: 'secret_text', name: 'CF_API_TOKEN', text: token },
-            { type: 'secret_text', name: 'CF_ACCOUNT_ID', text: accountId },
-            { type: 'plain_text', name: 'WORKER_NAME', text: workerName }
-        ];
-        if (wizardUrl) bindings.push({ type: 'plain_text', name: 'WIZARD_URL', text: wizardUrl });
-        await cfDeployScript(token, accountId, workerName, sourceCode, bindings);
-        await updateStatus('worker', 'success');
-        await updateStatus('bindings', 'success');
-
-        await updateStatus('subdomain', 'processing');
-        subdomain = await cfConfigureSubdomain(token, accountId, workerName, subdomain);
-        await updateStatus('subdomain', 'success');
-
-        await updateStatus('complete', 'success');
-        await sleep(600);
-
-        const url = 'https://' + workerName + '.' + subdomain + '.workers.dev';
-        document.getElementById('resultUrl').textContent = url;
-        document.getElementById('resultDb').textContent = dbId;
-        document.getElementById('resultKv').textContent = kvId;
-
-        instances.push({
-            id: workerName + '__' + Date.now(),
-            name: instanceName, workerName, accountId, subdomain, dbId, kvId,
-            url, deployedAt: new Date().toISOString()
-        });
-        saveInstances(instances);
-
-        showStep(4);
-    } catch (err) {
-        console.error(err);
-        const box = document.getElementById('errorMessage');
-        box.textContent = '❌ خطا: ' + err.message;
-        box.classList.remove('hidden');
-        if (/D1/.test(err.message)) updateStatus('d1', 'error');
-        else if (/KV/.test(err.message)) updateStatus('kv', 'error');
-        else if (/Worker/.test(err.message)) updateStatus('worker', 'error');
-        else if (/ساب.?دامین|subdomain/i.test(err.message)) updateStatus('subdomain', 'error');
-    }
-}
 
 /* ========================= DASHBOARD ========================= */
 function renderDashboard() {
