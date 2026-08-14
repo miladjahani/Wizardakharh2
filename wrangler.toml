@@ -1,0 +1,13 @@
+name = "miliconfig-wizard"
+main = "proxy.js"
+compatibility_date = "2026-07-10"
+
+# اختیاری: اگه می‌خوای خودِ همین Worker صفحه‌ی ویزارد رو هم سرو کنه (به‌جای GitHub Pages)،
+# این [assets] رو نگه دار و با `wrangler deploy` دیپلویش کن. در این حالت فیلد
+# «آدرس Worker پروکسی» رو توی تنظیمات ویزارد خالی بذار (چون هر دو روی یک origin هستن).
+#
+# اگه به‌جاش می‌خوای ویزارد همچنان روی GitHub Pages بمونه و فقط proxy.js جدا دیپلوی بشه،
+# این بخش [assets] رو حذف کن یا وایرانگلر رو فقط با همین فایل main دیپلوی کن.
+[assets]
+directory = "./wizard"
+binding = "ASSETS"

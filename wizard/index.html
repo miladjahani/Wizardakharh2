@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiliConfig Control Center</title>
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+        --primary-green:#00ff88; --secondary-green:#00cc6a;
+        --dark-bg:#0a0a0f; --card-bg:#12121a; --input-bg:#1a1a25;
+        --text-primary:#ffffff; --text-secondary:#a0a0b0;
+        --error-red:#ff4757; --warn-orange:#ffa502; --info-blue:#3ba7ff;
+        --success-green:#2ed573; --glow-shadow:0 0 20px rgba(0,255,136,.25);
+        --border-soft: rgba(255,255,255,.1);
+    }
+    body {
+        font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+        background:linear-gradient(135deg,var(--dark-bg) 0%,#1a1a2e 50%,#0f0f1a 100%);
+        min-height:100vh; color:var(--text-primary);
+    }
+    .app-shell{ max-width:1100px; margin:0 auto; padding:20px; }
+    .topbar{
+        display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;
+        background:var(--card-bg); border:1px solid var(--border-soft); border-radius:18px;
+        padding:16px 22px; margin-bottom:24px; box-shadow:var(--glow-shadow);
+    }
+    .brand{ display:flex; align-items:center; gap:12px; }
+    .brand .logo{
+        width:44px; height:44px; border-radius:50%;
+        background:linear-gradient(135deg,var(--primary-green),var(--secondary-green));
+        display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .brand .logo svg{ width:26px; height:26px; fill:#06110c; }
+    .brand h1{ font-size:19px; font-weight:800; }
+    .brand p{ font-size:12px; color:var(--text-secondary); margin-top:2px; }
+    .nav{ display:flex; gap:8px; flex-wrap:wrap; }
+    .nav-btn{
+        padding:10px 18px; border-radius:10px; border:2px solid var(--border-soft);
+        background:transparent; color:var(--text-secondary); font-weight:700; font-size:13px;
+        cursor:pointer; transition:.2s;
+    }
+    .nav-btn:hover{ border-color:var(--primary-green); color:var(--text-primary); }
+    .nav-btn.active{ background:var(--primary-green); color:#06110c; border-color:var(--primary-green); }
+
+    .view{ display:none; animation:fadeIn .35s ease; }
+    .view.active{ display:block; }
+    @keyframes fadeIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+    .card{
+        background:var(--card-bg); border:1px solid var(--border-soft); border-radius:18px;
+        padding:26px; margin-bottom:20px;
+    }
+    h2.section-title{ font-size:18px; margin-bottom:6px; }
+    .muted{ color:var(--text-secondary); font-size:13px; margin-bottom:20px; }
+
+    .form-group{ margin-bottom:20px; }
+    label{ display:block; margin-bottom:8px; font-weight:700; font-size:13px; }
+    label small{ color:var(--text-secondary); font-weight:400; }
+    input[type=text],input[type=password]{
+        width:100%; padding:14px 16px; background:var(--input-bg);
+        border:2px solid var(--border-soft); border-radius:10px; color:var(--text-primary);
+        font-size:14px; outline:none; transition:.2s;
+    }
+    input:focus{ border-color:var(--primary-green); box-shadow:0 0 12px rgba(0,255,136,.18); }
+    input::placeholder{ color:var(--text-secondary); }
+    .checkbox-row{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-secondary); }
+    .checkbox-row input{ width:auto; }
+
+    .btn{
+        padding:13px 20px; border:none; border-radius:10px; font-size:14px; font-weight:800;
+        cursor:pointer; transition:.2s; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .btn-primary{ background:linear-gradient(135deg,var(--primary-green),var(--secondary-green)); color:#06110c; }
+    .btn-primary:hover{ filter:brightness(1.08); }
+    .btn-outline{ background:transparent; border:2px solid var(--border-soft); color:var(--text-primary); }
+    .btn-outline:hover{ border-color:var(--primary-green); }
+    .btn-danger{ background:transparent; border:2px solid var(--error-red); color:var(--error-red); }
+    .btn-danger:hover{ background:rgba(255,71,87,.12); }
+    .btn-block{ width:100%; }
+    .btn-sm{ padding:8px 12px; font-size:12px; border-radius:8px; }
+    .btn[disabled]{ opacity:.5; cursor:not-allowed; }
+    .btn-row{ display:flex; gap:12px; flex-wrap:wrap; }
+
+    .alert{ padding:14px 16px; border-radius:10px; font-size:13px; line-height:1.8; margin-bottom:18px; }
+    .alert-info{ background:rgba(59,167,255,.1); border:1px solid rgba(59,167,255,.35); color:#8fd0ff; }
+    .alert-warn{ background:rgba(255,165,2,.1); border:1px solid rgba(255,165,2,.35); color:#ffd394; }
+    .alert-error{ background:rgba(255,71,87,.12); border:1px solid rgba(255,71,87,.4); color:#ff9aa2; }
+    .hidden{ display:none !important; }
+
+    /* dashboard */
+    .instances-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+    .instance-card{
+        background:var(--input-bg); border:1px solid var(--border-soft); border-radius:14px; padding:18px;
+        display:flex; flex-direction:column; gap:10px;
+    }
+    .instance-card h3{ font-size:15px; word-break:break-all; }
+    .instance-card a{ color:var(--primary-green); font-size:12px; word-break:break-all; text-decoration:none; }
+    .instance-card a:hover{ text-decoration:underline; }
+    .meta-row{ display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary); }
+    .status-badge{ display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; width:fit-content; }
+    .status-badge.online{ background:rgba(46,213,115,.15); color:var(--success-green); }
+    .status-badge.offline{ background:rgba(255,71,87,.15); color:var(--error-red); }
+    .status-badge.checking{ background:rgba(160,160,176,.15); color:var(--text-secondary); }
+    .empty-state{ text-align:center; padding:50px 20px; color:var(--text-secondary); }
+    .empty-state svg{ width:56px; height:56px; opacity:.4; margin-bottom:14px; }
+
+    /* step indicator (deploy view) */
+    .step-indicator{ display:flex; justify-content:space-between; margin-bottom:26px; position:relative; }
+    .step-indicator::before{ content:''; position:absolute; top:19px; left:0; right:0; height:2px; background:var(--border-soft); z-index:-1; }
+    .step{ display:flex; flex-direction:column; align-items:center; flex:1; }
+    .step-number{ width:38px; height:38px; border-radius:50%; background:var(--input-bg); border:2px solid var(--border-soft); display:flex; align-items:center; justify-content:center; font-weight:800; margin-bottom:6px; font-size:13px; }
+    .step.active .step-number{ background:var(--primary-green); border-color:var(--primary-green); color:#06110c; }
+    .step.completed .step-number{ background:var(--success-green); border-color:var(--success-green); color:#06110c; }
+    .step-label{ font-size:11px; color:var(--text-secondary); }
+    .step.active .step-label{ color:var(--primary-green); font-weight:700; }
+    .step-content{ display:none; }
+    .step-content.active{ display:block; }
+
+    .progress-bar{ width:100%; height:8px; background:var(--input-bg); border-radius:99px; overflow:hidden; margin-bottom:22px; }
+    .progress-fill{ height:100%; width:0%; background:linear-gradient(90deg,var(--primary-green),var(--secondary-green)); transition:width .4s ease; }
+    .status-item{ display:flex; align-items:center; gap:12px; padding:10px 0; font-size:13px; border-bottom:1px solid var(--border-soft); }
+    .status-item:last-child{ border-bottom:none; }
+    .status-icon{ width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; background:var(--input-bg); color:var(--text-secondary); }
+    .status-icon.processing{ background:rgba(59,167,255,.18); color:var(--info-blue); animation:spin 1s linear infinite; }
+    .status-icon.success{ background:rgba(46,213,115,.18); color:var(--success-green); }
+    .status-icon.error{ background:rgba(255,71,87,.18); color:var(--error-red); }
+    @keyframes spin{ from{transform:rotate(0);} to{transform:rotate(360deg);} }
+
+    .result-box{ background:var(--input-bg); border-radius:12px; padding:18px; margin-bottom:18px; }
+    .result-item{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-soft); font-size:12px; }
+    .result-item:last-child{ border-bottom:none; }
+    .result-value{ color:var(--primary-green); word-break:break-all; flex:1; }
+
+    .modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.65); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
+    .modal-box{ background:var(--card-bg); border:1px solid var(--border-soft); border-radius:16px; padding:24px; max-width:420px; width:100%; }
+
+    footer{ text-align:center; color:var(--text-secondary); font-size:12px; padding:20px 0; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+    <div class="topbar">
+        <div class="brand">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            </div>
+            <div>
+                <h1>MiliConfig Control Center</h1>
+                <p>مدیریت و استقرار Cloudflare Worker</p>
+            </div>
+        </div>
+        <div class="nav">
+            <button class="nav-btn" data-view="dashboard" onclick="goto('dashboard')">📊 داشبورد</button>
+            <button class="nav-btn" data-view="deploy" onclick="goto('deploy')">🚀 استقرار نمونه جدید</button>
+            <button class="nav-btn" data-view="settings" onclick="goto('settings')">⚙️ تنظیمات</button>
+        </div>
+    </div>
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <section id="view-dashboard" class="view">
+        <div class="card">
+            <h2 class="section-title">نمونه‌های دیپلوی‌شده</h2>
+            <p class="muted">هر Worker که با این ویزارد نصب کنی، اینجا ذخیره و قابل مدیریت می‌مونه (فقط توی همین مرورگر).</p>
+            <div id="dashboard-empty" class="empty-state hidden">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4v16m8-8H4"/></svg>
+                <p>هنوز هیچ نمونه‌ای دیپلوی نشده.</p>
+                <br>
+                <button class="btn btn-primary" onclick="goto('deploy')">استقرار اولین نمونه</button>
+            </div>
+            <div id="instances-grid" class="instances-grid"></div>
+        </div>
+    </section>
+
+    <!-- ===================== DEPLOY WIZARD ===================== -->
+    <section id="view-deploy" class="view">
+        <div class="card">
+            <div class="step-indicator">
+                <div class="step" data-step="1"><div class="step-number">1</div><div class="step-label">توکن</div></div>
+                <div class="step" data-step="2"><div class="step-number">2</div><div class="step-label">تنظیمات</div></div>
+                <div class="step" data-step="3"><div class="step-number">3</div><div class="step-label">نصب</div></div>
+                <div class="step" data-step="4"><div class="step-number">4</div><div class="step-label">نتیجه</div></div>
+            </div>
+
+            <!-- step 1 -->
+            <div class="step-content" id="dstep1">
+                <div class="alert alert-warn" id="proxyMissingWarn" style="display:none;">
+                    ℹ️ فیلد «آدرس Worker پروکسی» توی تنظیمات خالیه. این یعنی فرض می‌کنیم همین صفحه
+                    مستقیم توسط خودِ <code>proxy.js</code> سرو می‌شه (حالت same-origin). اگه به‌جاش
+                    از GitHub Pages برای هاست ویزارد استفاده می‌کنی، باید آدرس Worker جدای پروکسی رو
+                    اونجا وارد کنی، وگرنه با خطای اتصال مواجه می‌شی.
+                    <br><br>
+                    <button class="btn btn-outline btn-sm" onclick="goto('settings')">رفتن به تنظیمات</button>
+                </div>
+                <div class="alert alert-info">
+                    🔐 یک API Token از Cloudflare لازم داری که به Worker Scripts، D1 و اطلاعات اکانت دسترسی داشته باشه.
+                    اگه در تنظیمات توکن ذخیره کرده باشی، همینجا از قبل پر شده.
+                </div>
+                <div class="form-group">
+                    <label>لینک ساخت خودکار توکن (دسترسی‌ها از قبل انتخاب شدن):</label>
+                    <a id="token-link" href="#" target="_blank" class="btn btn-outline btn-block">📋 کلیک برای ساخت توکن در Cloudflare</a>
+                </div>
+                <div class="form-group">
+                    <label for="apiToken">API Token:</label>
+                    <input type="password" id="apiToken" placeholder="توکن را اینجا وارد کن..." autocomplete="off">
+                </div>
+                <button class="btn btn-primary btn-block" onclick="validateToken()">بررسی و ادامه</button>
+            </div>
+
+            <!-- step 2 -->
+            <div class="step-content" id="dstep2">
+                <div class="alert alert-warn">⚙️ تنظیمات این نمونه رو مشخص کن.</div>
+                <div class="form-group">
+                    <label for="instanceName">یک اسم دلخواه برای این نمونه (فقط برای نمایش در داشبورد):</label>
+                    <input type="text" id="instanceName" placeholder="مثلاً: سرور اصلی">
+                </div>
+                <div class="form-group">
+                    <label for="workerName">نام Worker:</label>
+                    <input type="text" id="workerName" value="miliconfig2-worker">
+                </div>
+                <div class="form-group">
+                    <label for="subdomain">ساب‌دامین workers.dev (اگه از قبل داری، همون رو بنویس):</label>
+                    <input type="text" id="subdomain" placeholder="miliconfig">
+                </div>
+                <div class="form-group">
+                    <label for="proxyUrl">URL پروکسی کراس <small>(اختیاری)</small>:</label>
+                    <input type="text" id="proxyUrl" placeholder="https://your-proxy.com">
+                </div>
+                <div class="form-group">
+                    <label for="wizardUrl">آدرس همین برنامه در GitHub Pages <small>(برای دکمه‌ی «استقرار نمونه جدید» داخل پنل)</small>:</label>
+                    <input type="text" id="wizardUrl" value="https://miladjahani.github.io/wizard245/">
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-outline" style="flex:1" onclick="showStep(1)">بازگشت</button>
+                    <button class="btn btn-primary" style="flex:2" onclick="startDeployment()">شروع نصب خودکار</button>
+                </div>
+            </div>
+
+            <!-- step 3 -->
+            <div class="step-content" id="dstep3">
+                <h3 style="margin-bottom:18px; text-align:center;">در حال نصب...</h3>
+                <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                <div id="statusList">
+                    <div class="status-item"><div class="status-icon" id="icon-validate">•</div><span id="text-validate">بررسی اعتبار توکن</span></div>
+                    <div class="status-item"><div class="status-icon" id="icon-account">•</div><span id="text-account">دریافت اطلاعات حساب</span></div>
+                    <div class="status-item"><div class="status-icon" id="icon-d1">•</div><span id="text-d1">ایجاد D1 Database</span></div>
+                    <div class="status-item"><div class="status-icon" id="icon-kv">•</div><span id="text-kv">ایجاد KV Storage</span></div>
+                    <div class="status-item"><div class="status-icon" id="icon-worker">•</div><span id="text-worker">آپلود و کانفیگ Worker</span></div>
+                    <div class="status-item"><div class="status-icon" id="icon-bindings">•</div><span id="text-bindings">اتصال Bindings</span></div>
+                    <div class="status-item"><div class="status-icon" id="icon-subdomain">•</div><span id="text-subdomain">تنظیم ساب‌دامین</span></div>
+                    <div class="status-item"><div class="status-icon" id="icon-complete">•</div><span id="text-complete">تکمیل نصب</span></div>
+                </div>
+                <div id="errorMessage" class="alert alert-error hidden" style="margin-top:16px;"></div>
+            </div>
+
+            <!-- step 4 -->
+            <div class="step-content" id="dstep4">
+                <div style="text-align:center; margin-bottom:20px;">
+                    <h2 style="color:var(--success-green); margin-bottom:8px;">نصب با موفقیت انجام شد!</h2>
+                    <p class="muted" style="margin-bottom:0;">این نمونه به داشبورد اضافه شد.</p>
+                </div>
+                <div class="result-box">
+                    <div class="result-item"><span>Worker URL:</span><span class="result-value" id="resultUrl"></span></div>
+                    <div class="result-item"><span>Database ID:</span><span class="result-value" id="resultDb"></span></div>
+                    <div class="result-item"><span>KV Namespace ID:</span><span class="result-value" id="resultKv"></span></div>
+                </div>
+                <div class="alert alert-info">💡 برای پنل مدیریت، <code>/panel</code> رو به انتهای Worker URL اضافه کن.</div>
+                <div class="btn-row">
+                    <button class="btn btn-outline" style="flex:1" onclick="resetDeployForm(); goto('deploy')">نصب یک نمونه دیگر</button>
+                    <button class="btn btn-primary" style="flex:1" onclick="goto('dashboard')">رفتن به داشبورد</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== SETTINGS ===================== -->
+    <section id="view-settings" class="view">
+        <div class="card">
+            <h2 class="section-title">تنظیمات</h2>
+            <p class="muted">این مقادیر فقط در همین مرورگر (localStorage) ذخیره می‌شن؛ به هیچ سروری جز Cloudflare و GitHub فرستاده نمی‌شن.</p>
+
+            <div class="form-group">
+                <label for="settingsCorsProxy">آدرس Worker پروکسی <small>(اگه ویزارد رو خودِ همین proxy.js سرو می‌کنه، خالی بذار)</small>:</label>
+                <input type="text" id="settingsCorsProxy" placeholder="https://cf-proxy.YOUR-SUBDOMAIN.workers.dev (فقط اگه جدا از GitHub Pages دیپلوی شده)">
+                <p class="muted" style="margin:8px 0 0;">
+                    مرورگر مستقیم اجازه‌ی صدا زدن api.cloudflare.com رو نمی‌ده (CORS).
+                    فایل <code>proxy.js</code> رو یک‌بار دستی توی داشبورد Cloudflare
+                    (Workers &amp; Pages → Create Worker → Edit code → Paste → Deploy) دیپلوی کن.
+                    اگه همون Worker رو با یک assets binding به‌عنوان هاست خودِ ویزارد هم استفاده کنی
+                    (به‌جای GitHub Pages)، این فیلد رو خالی بذار. اگه جدا از هم هستن، آدرس Worker رو اینجا بذار.
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label for="settingsToken">API Token پیش‌فرض:</label>
+                <input type="password" id="settingsToken" placeholder="توکن Cloudflare">
+            </div>
+            <div class="checkbox-row" style="margin-bottom:20px;">
+                <input type="checkbox" id="settingsSaveToken">
+                <label for="settingsSaveToken" style="margin:0;">این توکن رو در همین مرورگر ذخیره کن (تا هربار مجبور نباشی وارد کنی)</label>
+            </div>
+
+            <div class="form-group">
+                <label for="settingsSourceUrl">آدرس Source.js (خام گیت‌هاب):</label>
+                <input type="text" id="settingsSourceUrl" value="https://raw.githubusercontent.com/miladjahani/wizard234/main/Source.js">
+            </div>
+
+            <div class="form-group">
+                <label for="settingsWizardUrl">آدرس این برنامه در GitHub Pages:</label>
+                <input type="text" id="settingsWizardUrl" value="https://miladjahani.github.io/wizard245/">
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" style="flex:1" onclick="saveSettings()">ذخیره تنظیمات</button>
+                <button class="btn btn-outline" style="flex:1" onclick="testSettingsToken()">تست توکن</button>
+            </div>
+            <div id="settingsResult" style="margin-top:14px;"></div>
+        </div>
+
+        <div class="card">
+            <h2 class="section-title">پاک کردن اطلاعات محلی</h2>
+            <p class="muted">لیست نمونه‌ها و توکن ذخیره‌شده در همین مرورگر رو پاک می‌کنه (چیزی روی Cloudflare حذف نمی‌شه).</p>
+            <button class="btn btn-danger" onclick="clearLocalData()">پاک کردن همه‌ی داده‌های محلی</button>
+        </div>
+    </section>
+
+    <footer>MiliConfig 2 · بر پایه Zeus Panel</footer>
+</div>
+
+<div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h3 id="confirm-title" style="margin-bottom:10px;"></h3>
+        <p id="confirm-text" class="muted" style="margin-bottom:18px;"></p>
+        <div id="confirm-extra"></div>
+        <div class="btn-row">
+            <button class="btn btn-outline" style="flex:1" onclick="closeConfirm()">انصراف</button>
+            <button class="btn btn-danger" style="flex:1" id="confirm-ok-btn">تایید</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ========================= STORAGE LAYER ========================= */
+const LS_SETTINGS = 'mc_settings_v1';
+const LS_INSTANCES = 'mc_instances_v1';
+
+function loadSettings() {
+    try { return JSON.parse(localStorage.getItem(LS_SETTINGS)) || {}; } catch (e) { return {}; }
+}
+function saveSettingsToStorage(obj) { localStorage.setItem(LS_SETTINGS, JSON.stringify(obj)); }
+function loadInstances() {
+    try { return JSON.parse(localStorage.getItem(LS_INSTANCES)) || []; } catch (e) { return []; }
+}
+function saveInstances(list) { localStorage.setItem(LS_INSTANCES, JSON.stringify(list)); }
+
+let settings = loadSettings();
+let instances = loadInstances();
+
+/* ========================= NAV / ROUTING ========================= */
+function goto(view) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('view-' + view).classList.add('active');
+    const btn = document.querySelector('.nav-btn[data-view="' + view + '"]');
+    if (btn) btn.classList.add('active');
+    location.hash = view;
+    if (view === 'dashboard') renderDashboard();
+    if (view === 'settings') fillSettingsForm();
+    if (view === 'deploy') prefillDeployForm();
+}
+window.addEventListener('DOMContentLoaded', () => {
+    buildTokenLink();
+    const hashView = (location.hash || '#dashboard').replace('#', '');
+    goto(['dashboard', 'deploy', 'settings'].includes(hashView) ? hashView : 'dashboard');
+});
+
+function buildTokenLink() {
+    const perms = [
+        { key: 'account_settings', type: 'read' },
+        { key: 'workers_scripts', type: 'edit' },
+        { key: 'workers_kv_storage', type: 'edit' },
+        { key: 'd1', type: 'edit' }
+    ];
+    const url = 'https://dash.cloudflare.com/?to=/:account/api-tokens&permissionGroupKeys='
+        + encodeURIComponent(JSON.stringify(perms)) + '&name=' + encodeURIComponent('MiliConfig2-Deploy');
+    document.getElementById('token-link').href = url;
+}
+
+/* ========================= SETTINGS VIEW ========================= */
+function fillSettingsForm() {
+    document.getElementById('settingsCorsProxy').value = settings.corsProxy || '';
+    document.getElementById('settingsToken').value = settings.token || '';
+    document.getElementById('settingsSaveToken').checked = !!settings.saveToken;
+    document.getElementById('settingsSourceUrl').value = settings.sourceUrl || document.getElementById('settingsSourceUrl').value;
+    document.getElementById('settingsWizardUrl').value = settings.wizardUrl || document.getElementById('settingsWizardUrl').value;
+}
+function saveSettings() {
+    const saveToken = document.getElementById('settingsSaveToken').checked;
+    settings = {
+        corsProxy: document.getElementById('settingsCorsProxy').value.trim(),
+        token: saveToken ? document.getElementById('settingsToken').value.trim() : '',
+        saveToken,
+        sourceUrl: document.getElementById('settingsSourceUrl').value.trim(),
+        wizardUrl: document.getElementById('settingsWizardUrl').value.trim()
+    };
+    saveSettingsToStorage(settings);
+    document.getElementById('settingsResult').innerHTML = '<div class="alert alert-info">✅ ذخیره شد.</div>';
+}
+async function testSettingsToken() {
+    const token = document.getElementById('settingsToken').value.trim();
+    const proxy = document.getElementById('settingsCorsProxy').value.trim();
+    const box = document.getElementById('settingsResult');
+    if (!proxy) { box.innerHTML = '<div class="alert alert-error">اول آدرس Worker پروکسی CORS رو وارد کن.</div>'; return; }
+    if (!token) { box.innerHTML = '<div class="alert alert-error">اول توکن رو وارد کن.</div>'; return; }
+    box.innerHTML = '<div class="alert alert-info">در حال بررسی...</div>';
+    const prevProxy = settings.corsProxy;
+    settings.corsProxy = proxy;
+    try {
+        const accounts = await cfListAccounts(token);
+        box.innerHTML = '<div class="alert alert-info">✅ توکن و پروکسی هر دو معتبرن. تعداد اکانت‌های قابل‌دسترس: ' + accounts.length + '</div>';
+    } catch (e) {
+        box.innerHTML = '<div class="alert alert-error">❌ ' + e.message + '</div>';
+    } finally {
+        settings.corsProxy = prevProxy;
+    }
+}
+function clearLocalData() {
+    openConfirm('پاک کردن اطلاعات محلی', 'مطمئنی؟ لیست نمونه‌ها و توکن ذخیره‌شده در این مرورگر پاک می‌شه.', () => {
+        localStorage.removeItem(LS_SETTINGS);
+        localStorage.removeItem(LS_INSTANCES);
+        settings = {}; instances = [];
+        fillSettingsForm(); renderDashboard();
+        closeConfirm();
+    });
+}
+
+/* ========================= CONFIRM MODAL ========================= */
+function openConfirm(title, text, onOk, extraHtml) {
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-text').textContent = text;
+    document.getElementById('confirm-extra').innerHTML = extraHtml || '';
+    const okBtn = document.getElementById('confirm-ok-btn');
+    okBtn.onclick = onOk;
+    document.getElementById('confirm-modal').classList.remove('hidden');
+}
+function closeConfirm() { document.getElementById('confirm-modal').classList.add('hidden'); }
+
+/* ========================= CLOUDFLARE API HELPERS ========================= */
+function apiUrl(path) {
+    const base = (settings.corsProxy || '').trim().replace(/\/+$/, '');
+    // اگه خالی باشه، فرض می‌کنیم همین صفحه توسط خودِ proxy.js سرو می‌شه (same-origin)
+    return base + '/__cf' + path;
+}
+async function cfListAccounts(token) {
+    const res = await fetch(apiUrl('/accounts'), {
+        headers: { 'X-CF-Token': token, 'Content-Type': 'application/json' }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+        throw new Error(data?.errors?.[0]?.message || ('توکن نامعتبر یا کد وضعیت HTTP: ' + res.status));
+    }
+    if (!data.result || data.result.length === 0) throw new Error('این توکن به هیچ اکانتی دسترسی نداره.');
+    return data.result;
+}
+
+async function cfCreateD1(token, accountId, name) {
+    const res = await fetch(apiUrl('/accounts/' + accountId + '/d1/database'), {
+        method: 'POST',
+        headers: { 'X-CF-Token': token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) throw new Error('خطا در ایجاد D1: ' + (data?.errors?.[0]?.message || res.status));
+    return data.result.uuid;
+}
+
+async function cfCreateKV(token, accountId, title) {
+    const res = await fetch(apiUrl('/accounts/' + accountId + '/storage/kv/namespaces'), {
+        method: 'POST',
+        headers: { 'X-CF-Token': token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) throw new Error('خطا در ایجاد KV: ' + (data?.errors?.[0]?.message || res.status));
+    return data.result.id;
+}
+
+async function cfGetBindings(token, accountId, scriptName) {
+    const res = await fetch(apiUrl('/accounts/' + accountId + '/workers/scripts/' + scriptName + '/bindings'), {
+        headers: { 'X-CF-Token': token }
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => ({}));
+    if (!data.success) return null;
+    return data.result || [];
+}
+
+async function cfDeployScript(token, accountId, scriptName, sourceCode, extraBindings) {
+    let bindings = extraBindings || [];
+    const metadata = {
+        main_module: 'index.js',
+        compatibility_date: '2026-07-10',
+        compatibility_flags: ['nodejs_compat'],
+        bindings: bindings
+    };
+    const formData = new FormData();
+    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }), 'metadata.json');
+    formData.append('index.js', new Blob([sourceCode], { type: 'application/javascript+module' }), 'index.js');
+    const res = await fetch(apiUrl('/accounts/' + accountId + '/workers/scripts/' + scriptName), {
+        method: 'PUT', headers: { 'X-CF-Token': token }, body: formData
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) throw new Error('خطا در آپلود Worker: ' + (data?.errors?.[0]?.message || res.status));
+    return data.result;
+}
+
+async function cfConfigureSubdomain(token, accountId, scriptName, subdomain) {
+    const res = await fetch(apiUrl('/accounts/' + accountId + '/workers/subdomain'), {
+        headers: { 'X-CF-Token': token, 'Content-Type': 'application/json' }
+    });
+    const data = await res.json().catch(() => ({}));
+    let realSubdomain = subdomain;
+    if (res.ok && data.success && data.result && data.result.subdomain) {
+        realSubdomain = data.result.subdomain;
+    } else {
+        const setRes = await fetch(apiUrl('/accounts/' + accountId + '/workers/subdomain'), {
+            method: 'PUT',
+            headers: { 'X-CF-Token': token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subdomain })
+        });
+        const setData = await setRes.json().catch(() => ({}));
+        if (!setRes.ok || !setData.success) throw new Error('خطا در تنظیم ساب‌دامین: ' + (setData?.errors?.[0]?.message || setRes.status));
+        realSubdomain = setData.result?.subdomain || subdomain;
+    }
+    const enableRes = await fetch(apiUrl('/accounts/' + accountId + '/workers/scripts/' + scriptName + '/subdomain'), {
+        method: 'POST',
+        headers: { 'X-CF-Token': token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: true, previews_enabled: true })
+    });
+    const enableData = await enableRes.json().catch(() => ({}));
+    if (!enableRes.ok || !enableData.success) throw new Error('خطا در فعال‌سازی روی ساب‌دامین: ' + (enableData?.errors?.[0]?.message || enableRes.status));
+    return realSubdomain;
+}
+
+async function cfDeleteScript(token, accountId, scriptName) {
+    const res = await fetch(apiUrl('/accounts/' + accountId + '/workers/scripts/' + scriptName), {
+        method: 'DELETE', headers: { 'X-CF-Token': token }
+    });
+    if (res.status === 404) return true;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) throw new Error('خطا در حذف Worker: ' + (data?.errors?.[0]?.message || res.status));
+    return true;
+}
+async function cfDeleteD1(token, accountId, dbId) {
+    const res = await fetch(apiUrl('/accounts/' + accountId + '/d1/database/' + dbId), {
+        method: 'DELETE', headers: { 'X-CF-Token': token }
+    });
+    if (res.status === 404) return true;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) throw new Error('خطا در حذف D1: ' + (data?.errors?.[0]?.message || res.status));
+    return true;
+}
+async function cfDeleteKV(token, accountId, kvId) {
+    const res = await fetch(apiUrl('/accounts/' + accountId + '/storage/kv/namespaces/' + kvId), {
+        method: 'DELETE', headers: { 'X-CF-Token': token }
+    });
+    if (res.status === 404) return true;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) throw new Error('خطا در حذف KV: ' + (data?.errors?.[0]?.message || res.status));
+    return true;
+}
+
+async function fetchLatestSource() {
+    const url = (settings.sourceUrl || document.getElementById('settingsSourceUrl').value).trim();
+    const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
+    if (!res.ok) throw new Error('خطا در دریافت Source.js از GitHub (وضعیت ' + res.status + ')');
+    return res.text();
+}
+
+/* ========================= DEPLOY WIZARD ========================= */
+let deployState = { token: '', accountId: '' };
+
+function showStep(step) {
+    document.querySelectorAll('#view-deploy .step-content').forEach((el, i) => el.classList.toggle('active', i + 1 === step));
+    document.querySelectorAll('#view-deploy .step').forEach((el, i) => {
+        el.classList.toggle('active', i + 1 === step);
+        el.classList.toggle('completed', i + 1 < step);
+    });
+}
+function prefillDeployForm() {
+    if (settings.saveToken && settings.token) document.getElementById('apiToken').value = settings.token;
+    if (settings.wizardUrl) document.getElementById('wizardUrl').value = settings.wizardUrl;
+    document.getElementById('proxyMissingWarn').style.display = settings.corsProxy ? 'none' : 'block';
+    showStep(1);
+}
+function resetDeployForm() {
+    document.getElementById('errorMessage').classList.add('hidden');
+    document.querySelectorAll('#statusList .status-icon').forEach(i => { i.className = 'status-icon'; i.innerHTML = '•'; });
+    document.getElementById('progressFill').style.width = '0%';
+    showStep(1);
+}
+
+async function validateToken() {
+    const token = document.getElementById('apiToken').value.trim();
+    if (!token) { alert('لطفاً یک API Token وارد کن'); return; }
+    try {
+        const accounts = await cfListAccounts(token);
+        deployState.token = token;
+        deployState.accountId = accounts[0].id;
+        showStep(2);
+    } catch (e) {
+        alert('خطا در بررسی توکن: ' + e.message);
+    }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+async function updateStatus(stepId, status) {
+    const icon = document.getElementById('icon-' + stepId);
+    const text = document.getElementById('text-' + stepId);
+    icon.className = 'status-icon ' + status;
+    icon.innerHTML = status === 'processing' ? '⟳' : status === 'success' ? '✓' : status === 'error' ? '✗' : '•';
+    if (status === 'success') text.textContent = text.textContent.replace(' ...', '') + ' ✔';
+    const allIcons = Array.from(document.querySelectorAll('#statusList .status-icon'));
+    const idx = allIcons.indexOf(icon);
+    document.getElementById('progressFill').style.width = ((idx + 1) / allIcons.length * 100) + '%';
+}
+
+async function startDeployment() {
+    showStep(3);
+    document.getElementById('errorMessage').classList.add('hidden');
+    const instanceName = document.getElementById('instanceName').value.trim() || document.getElementById('workerName').value.trim();
+    const workerName = document.getElementById('workerName').value.trim() || 'miliconfig2-worker';
+    let subdomain = document.getElementById('subdomain').value.trim() || 'miliconfig';
+    const proxyUrl = document.getElementById('proxyUrl').value.trim();
+    const wizardUrl = document.getElementById('wizardUrl').value.trim();
+    const token = deployState.token, accountId = deployState.accountId;
+
+    try {
+        await updateStatus('validate', 'processing'); await sleep(300); await updateStatus('validate', 'success');
+        await updateStatus('account', 'processing'); await sleep(300); await updateStatus('account', 'success');
+
+        await updateStatus('d1', 'processing');
+        const dbId = await cfCreateD1(token, accountId, workerName + '-db');
+        await updateStatus('d1', 'success');
+
+        await updateStatus('kv', 'processing');
+        const kvId = await cfCreateKV(token, accountId, workerName + '-kv');
+        await updateStatus('kv', 'success');
+
+        await updateStatus('worker', 'processing');
+        let sourceCode = await fetchLatestSource();
+        if (proxyUrl) sourceCode = 'const CROSS_PROXY_URL = ' + JSON.stringify(proxyUrl) + ';\n' + sourceCode;
+        const bindings = [
+            { type: 'd1', name: 'DB', id: dbId },
+            { type: 'kv_namespace', name: 'KV', namespace_id: kvId },
+            { type: 'secret_text', name: 'CF_API_TOKEN', text: token },
+            { type: 'secret_text', name: 'CF_ACCOUNT_ID', text: accountId },
+            { type: 'plain_text', name: 'WORKER_NAME', text: workerName }
+        ];
+        if (wizardUrl) bindings.push({ type: 'plain_text', name: 'WIZARD_URL', text: wizardUrl });
+        await cfDeployScript(token, accountId, workerName, sourceCode, bindings);
+        await updateStatus('worker', 'success');
+        await updateStatus('bindings', 'success');
+
+        await updateStatus('subdomain', 'processing');
+        subdomain = await cfConfigureSubdomain(token, accountId, workerName, subdomain);
+        await updateStatus('subdomain', 'success');
+
+        await updateStatus('complete', 'success');
+        await sleep(600);
+
+        const url = 'https://' + workerName + '.' + subdomain + '.workers.dev';
+        document.getElementById('resultUrl').textContent = url;
+        document.getElementById('resultDb').textContent = dbId;
+        document.getElementById('resultKv').textContent = kvId;
+
+        instances.push({
+            id: workerName + '__' + Date.now(),
+            name: instanceName, workerName, accountId, subdomain, dbId, kvId,
+            url, deployedAt: new Date().toISOString()
+        });
+        saveInstances(instances);
+
+        showStep(4);
+    } catch (err) {
+        console.error(err);
+        const box = document.getElementById('errorMessage');
+        box.textContent = '❌ خطا: ' + err.message;
+        box.classList.remove('hidden');
+        if (/D1/.test(err.message)) updateStatus('d1', 'error');
+        else if (/KV/.test(err.message)) updateStatus('kv', 'error');
+        else if (/Worker/.test(err.message)) updateStatus('worker', 'error');
+        else if (/ساب.?دامین|subdomain/i.test(err.message)) updateStatus('subdomain', 'error');
+    }
+}
+
+/* ========================= DASHBOARD ========================= */
+function renderDashboard() {
+    const grid = document.getElementById('instances-grid');
+    const empty = document.getElementById('dashboard-empty');
+    if (!instances.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    grid.innerHTML = instances.map(inst => `
+        <div class="instance-card" id="card-${inst.id}">
+            <span class="status-badge checking" id="status-${inst.id}">در حال بررسی...</span>
+            <h3>${escapeHtml(inst.name || inst.workerName)}</h3>
+            <a href="${inst.url}" target="_blank">${inst.url}</a>
+            <div class="meta-row"><span>Worker:</span><span>${escapeHtml(inst.workerName)}</span></div>
+            <div class="meta-row"><span>نصب شده:</span><span>${new Date(inst.deployedAt).toLocaleDateString('fa-IR')}</span></div>
+            <div class="btn-row">
+                <button class="btn btn-outline btn-sm" onclick="window.open('${inst.url}/panel','_blank')">باز کردن پنل</button>
+                <button class="btn btn-outline btn-sm" onclick="updateInstance('${inst.id}')">به‌روزرسانی</button>
+                <button class="btn btn-danger btn-sm" onclick="confirmDeleteInstance('${inst.id}')">حذف</button>
+            </div>
+        </div>
+    `).join('');
+    instances.forEach(checkInstanceStatus);
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function checkInstanceStatus(inst) {
+    const badge = document.getElementById('status-' + inst.id);
+    if (!badge) return;
+    try {
+        await fetch(inst.url, { mode: 'no-cors' });
+        badge.className = 'status-badge online';
+        badge.textContent = '🟢 در دسترس';
+    } catch (e) {
+        badge.className = 'status-badge offline';
+        badge.textContent = '🔴 غیرقابل‌دسترس';
+    }
+}
+
+function getActiveToken() {
+    if (settings.saveToken && settings.token) return settings.token;
+    return prompt('برای این عملیات به API Token کلودفلر نیاز داریم (اگه در تنظیمات ذخیره‌اش کنی، دیگه نیازی به وارد کردن دستی نیست):') || '';
+}
+
+async function updateInstance(id) {
+    const inst = instances.find(i => i.id === id);
+    if (!inst) return;
+    const token = getActiveToken();
+    if (!token) return;
+    const badge = document.getElementById('status-' + id);
+    const originalText = badge.textContent;
+    badge.className = 'status-badge checking'; badge.textContent = 'در حال به‌روزرسانی...';
+    try {
+        const currentBindings = await cfGetBindings(token, inst.accountId, inst.workerName);
+        const newBindings = [];
+        for (const b of currentBindings || []) {
+            if (b.name === 'CF_API_TOKEN' || b.name === 'CF_ACCOUNT_ID') continue;
+            if (b.type === 'd1') newBindings.push({ type: 'd1', name: b.name, id: b.database_id || b.id });
+            else if (b.type === 'kv_namespace') newBindings.push({ type: 'kv_namespace', name: b.name, namespace_id: b.namespace_id || b.id });
+            else if (b.type === 'plain_text') newBindings.push({ type: 'plain_text', name: b.name, text: b.text || '' });
+            else if (b.type !== 'secret_text') newBindings.push(b);
+        }
+        newBindings.push({ type: 'secret_text', name: 'CF_API_TOKEN', text: token });
+        newBindings.push({ type: 'secret_text', name: 'CF_ACCOUNT_ID', text: inst.accountId });
+        const sourceCode = await fetchLatestSource();
+        await cfDeployScript(token, inst.accountId, inst.workerName, sourceCode, newBindings);
+        badge.className = 'status-badge online'; badge.textContent = '✅ به‌روزرسانی شد';
+        setTimeout(() => checkInstanceStatus(inst), 2000);
+    } catch (e) {
+        badge.className = 'status-badge offline'; badge.textContent = '❌ خطا';
+        alert('خطا در به‌روزرسانی: ' + e.message);
+    }
+}
+
+function confirmDeleteInstance(id) {
+    const inst = instances.find(i => i.id === id);
+    if (!inst) return;
+    const extra = `
+        <div class="checkbox-row" style="margin-bottom:8px;"><input type="checkbox" id="del-db" checked><label for="del-db" style="margin:0;">حذف D1 Database هم بشه</label></div>
+        <div class="checkbox-row" style="margin-bottom:14px;"><input type="checkbox" id="del-kv" checked><label for="del-kv" style="margin:0;">حذف KV Namespace هم بشه</label></div>
+    `;
+    openConfirm('حذف ' + (inst.name || inst.workerName), 'این عملیات از روی Cloudflare هم پاک می‌کنه و برگشت‌ناپذیره.', () => deleteInstance(id), extra);
+}
+async function deleteInstance(id) {
+    const inst = instances.find(i => i.id === id);
+    if (!inst) return;
+    const delDb = document.getElementById('del-db').checked;
+    const delKv = document.getElementById('del-kv').checked;
+    closeConfirm();
+    const token = getActiveToken();
+    if (!token) return;
+    try {
+        await cfDeleteScript(token, inst.accountId, inst.workerName);
+        if (delDb && inst.dbId) await cfDeleteD1(token, inst.accountId, inst.dbId);
+        if (delKv && inst.kvId) await cfDeleteKV(token, inst.accountId, inst.kvId);
+        instances = instances.filter(i => i.id !== id);
+        saveInstances(instances);
+        renderDashboard();
+    } catch (e) {
+        alert('خطا در حذف: ' + e.message);
+    }
+}
+</script>
+</body>
+</html>
